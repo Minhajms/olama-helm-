@@ -1,0 +1,221 @@
+# Default values for ollama-helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- Number of replicas
+replicaCount: 1
+
+# Knative configuration
+knative:
+  enabled: false
+  containerConcurrency: 0
+  timeoutSeconds: 300
+  responseStartTimeoutSeconds: 300
+  idleTimeoutSeconds: 300
+  annotations: {}
+
+# Docker image
+image:
+  repository: ollama/ollama
+  pullPolicy: IfNotPresent
+  tag: ""
+
+# -- Docker registry secret names as an array
+imagePullSecrets: []
+
+# -- String to partially override template  (will maintain the release name)
+nameOverride: ""
+
+# -- String to fully override template
+fullnameOverride: ""
+
+# -- String to fully override namespace
+namespaceOverride: ""
+
+# Ollama parameters
+ollama:
+  port: 11434
+
+  gpu:
+    enabled: false # Set to false as your masternode has no GPU
+    type: 'nvidia'
+    number: 1
+    nvidiaResource: "nvidia.com/gpu"
+    mig:
+      enabled: false
+      devices: {}
+
+  models:
+    # -- List of models to pull at container startup
+    # We will NOT pull any model at startup, allowing for manual pulling later.
+    pull: [] # CONFIRMED: No models pulled at startup
+
+    # run: []
+    # create: []
+
+  # -- Add insecure flag for pulling at container startup
+  insecure: false
+
+  # -- Override ollama-data volume mount path, default: "/root/.ollama"
+  mountPath: ""
+
+# Service account
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# -- Map of annotations to add to the pods
+podAnnotations: {}
+
+# -- Map of labels to add to the pods
+podLabels: {}
+
+# -- Pod Security Context
+podSecurityContext: {}
+
+# -- Priority Class Name
+priorityClassName: ""
+
+# -- Container Security Context
+securityContext: {}
+
+# -- Specify runtime class
+runtimeClassName: ""
+
+# Configure Service
+service:
+  type: ClusterIP
+  port: 11434
+  nodePort: 31434
+  loadBalancerIP:
+  annotations: {}
+  labels: {}
+
+# Configure Deployment
+deployment:
+  labels: {}
+
+# Configure the ingress resource
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ollama.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Configure resource requests and limits
+# This is the updated, more balanced allocation for the masternode
+resources:
+  requests:
+    cpu: "6" # Request 6 CPU cores
+    memory: "12Gi" # Request 12 GiB of RAM
+  limits:
+    cpu: "8" # Limit to 8 CPU cores
+    memory: "18Gi" # Limit to 18 GiB of RAM
+
+# Configure extra options for liveness probe
+livenessProbe:
+  enabled: true
+  path: /
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 6
+  successThreshold: 1
+
+# Configure extra options for readiness probe
+readinessProbe:
+  enabled: true
+  path: /
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 6
+  successThreshold: 1
+
+# Configure autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+# -- Additional volumes on the output Deployment definition.
+volumes: []
+
+# -- Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+
+# -- Additional arguments on the output Deployment definition.
+extraArgs: []
+
+# -- Additional environments variables on the output Deployment definition.
+extraEnv: []
+
+# -- Additionl environment variables from external sources (like ConfigMap)
+extraEnvFrom: []
+
+# Enable persistence using Persistent Volume Claims
+persistentVolume:
+  enabled: true
+  accessModes:
+    - ReadWriteOnce
+  annotations: {}
+  existingClaim: ""
+  size: 30Gi # Sufficient for several 7B models or a single 13B model
+  storageClass: "ceph-block" # CONFIRMED: Using your 'ceph-block' StorageClass
+  volumeMode: ""
+  subPath: ""
+  volumeName: ""
+
+# -- Node labels for pod assignment.
+nodeSelector: {}
+
+# -- Tolerations for pod assignment
+tolerations:
+  # THIS IS ESSENTIAL TO ALLOW OLLAMA TO RUN ON THE MASTER NODE
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+# -- Affinity for pod assignment
+affinity: {}
+
+# -- Lifecycle for pod assignment (override ollama.models startup pull/run)
+lifecycle: {}
+
+# How to replace existing pods
+updateStrategy:
+  type: "Recreate"
+
+# -- Topology Spread Constraints for pod assignment
+topologySpreadConstraints: {}
+
+# -- Wait for a grace period
+terminationGracePeriodSeconds: 120
+
+# -- Init containers to add to the pod
+initContainers: []
+
+# -- Use the host's ipc namespace.
+hostIPC: false
+
+# -- Use the host's pid namespace
+hostPID: false
+
+# -- Use the host's network namespace.
+hostNetwork: false
+
+# -- Extra K8s manifests to deploy
+extraObjects: []
+
+# Test connection pods
+tests:
+  enabled: true
+  labels: {}
